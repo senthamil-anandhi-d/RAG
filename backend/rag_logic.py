@@ -20,12 +20,17 @@ class RAGEngine:
         self.llm = ChatGroq(model_name="llama-3.3-70b-versatile", temperature=0)
 
     def process_pdf(self, file_path):
+        print(f"DEBUG: Processing PDF at {file_path}")
         loader = PyPDFLoader(file_path)
         docs = loader.load()
+        print(f"DEBUG: PDF loaded. {len(docs)} pages found.")
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
         chunks = text_splitter.split_documents(docs)
+        print(f"DEBUG: Text split into {len(chunks)} chunks.")
         # Create FAISS vector store
+        print("DEBUG: Creating FAISS index...")
         self.vector_db = FAISS.from_documents(chunks, self.embeddings)
+        print("DEBUG: FAISS index created successfully.")
         return len(chunks)
 
     def ask(self, query):

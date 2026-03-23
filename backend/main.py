@@ -23,17 +23,23 @@ async def root():
 
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...)):
+    print(f"DEBUG: Received upload request for file: {file.filename}")
     if not file.filename.lower().endswith(".pdf"):
+        print("DEBUG: Rejected non-PDF file")
         raise HTTPException(status_code=400, detail="Only PDF files are allowed.")
     
     file_path = os.path.join(UPLOAD_DIR, file.filename)
     try:
+        print(f"DEBUG: Saving file to {file_path}")
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
         
+        print("DEBUG: File saved. Starting PDF processing...")
         num_chunks = rag_engine.process_pdf(file_path)
+        print(f"DEBUG: PDF processed successfully. {num_chunks} chunks.")
         return {"message": f"PDF processed successfully. {num_chunks} chunks created."}
     except Exception as e:
+        print(f"DEBUG: Error during upload/processing: {str(e)}")
         if os.path.exists(file_path):
             os.remove(file_path)
         raise HTTPException(status_code=500, detail=str(e))
