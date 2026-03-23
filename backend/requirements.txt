@@ -9,3 +9,4 @@ faiss-cpu
 langchain-huggingface
 langchain-community
 python-dotenv
+langchain-classic
