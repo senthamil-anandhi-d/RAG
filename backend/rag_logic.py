@@ -34,33 +34,45 @@ class RAGEngine:
         return len(chunks)
 
     def ask(self, query):
+        print(f"DEBUG: Internal ask method called with query: {query}")
         if not self.vector_db:
+            print("DEBUG: No vector database found. User needs to upload PDF.")
             return "Please upload a PDF first."
         
-        # Modern LCEL-based RAG chain
-        system_prompt = (
-            "You are an assistant for question-answering tasks. "
-            "Use the following pieces of retrieved context to answer "
-            "the question. If you don't know the answer, say that you "
-            "don't know. Use three sentences maximum and keep the "
-            "answer concise."
-            "\n\n"
-            "{context}"
-        )
-        
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", system_prompt),
-                ("human", "{input}"),
-            ]
-        )
-        
-        # Create the chains
-        combine_docs_chain = create_stuff_documents_chain(self.llm, prompt)
-        retrieval_chain = create_retrieval_chain(self.vector_db.as_retriever(), combine_docs_chain)
-        
-        # Using invoke as requested in the user prompt script
-        response = retrieval_chain.invoke({"input": query})
-        return response['answer']
+        try:
+            # Modern LCEL-based RAG chain
+            print("DEBUG: Setting up system prompt...")
+            system_prompt = (
+                "You are an assistant for question-answering tasks. "
+                "Use the following pieces of retrieved context to answer "
+                "the question. If you don't know the answer, say that you "
+                "don't know. Use three sentences maximum and keep the "
+                "answer concise."
+                "\n\n"
+                "{context}"
+            )
+            
+            prompt = ChatPromptTemplate.from_messages(
+                [
+                    ("system", system_prompt),
+                    ("human", "{input}"),
+                ]
+            )
+            
+            print("DEBUG: Initializing combine_docs_chain...")
+            combine_docs_chain = create_stuff_documents_chain(self.llm, prompt)
+            
+            print("DEBUG: Initializing retrieval_chain...")
+            retrieval_chain = create_retrieval_chain(self.vector_db.as_retriever(), combine_docs_chain)
+            
+            print("DEBUG: Invoking chain...")
+            response = retrieval_chain.invoke({"input": query})
+            print("DEBUG: Chain invocation successful.")
+            return response['answer']
+        except Exception as e:
+            print(f"DEBUG: Exception in rag_engine.ask: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise e
 
 rag_engine = RAGEngine()

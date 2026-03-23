@@ -46,10 +46,12 @@ async def upload_pdf(file: UploadFile = File(...)):
 
 @app.post("/ask")
 async def ask_question(query: str):
+    print(f"DEBUG: Processing question: {query}")
     try:
         response = rag_engine.ask(query)
         return {"response": response}
     except Exception as e:
+        print(f"DEBUG: Error in /ask route: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
