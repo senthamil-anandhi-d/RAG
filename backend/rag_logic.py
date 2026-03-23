@@ -4,7 +4,9 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_groq import ChatGroq
-from langchain.chains import RetrievalQA
+from langchain.chains import create_retrieval_chain
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain_core.prompts import ChatPromptTemplate
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -30,13 +32,30 @@ class RAGEngine:
         if not self.vector_db:
             return "Please upload a PDF first."
         
-        qa_chain = RetrievalQA.from_chain_type(
-            llm=self.llm,
-            chain_type="stuff",
-            retriever=self.vector_db.as_retriever()
+        # Modern LCEL-based RAG chain
+        system_prompt = (
+            "You are an assistant for question-answering tasks. "
+            "Use the following pieces of retrieved context to answer "
+            "the question. If you don't know the answer, say that you "
+            "don't know. Use three sentences maximum and keep the "
+            "answer concise."
+            "\n\n"
+            "{context}"
         )
+        
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", system_prompt),
+                ("human", "{input}"),
+            ]
+        )
+        
+        # Create the chains
+        combine_docs_chain = create_stuff_documents_chain(self.llm, prompt)
+        retrieval_chain = create_retrieval_chain(self.vector_db.as_retriever(), combine_docs_chain)
+        
         # Using invoke as requested in the user prompt script
-        response = qa_chain.invoke(query)
-        return response['result']
+        response = retrieval_chain.invoke({"input": query})
+        return response['answer']
 
 rag_engine = RAGEngine()
